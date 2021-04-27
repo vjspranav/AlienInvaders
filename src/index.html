@@ -4,8 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ThreeJS Starter</title>
+    <style>
+        .hud {
+            display: flex;
+        }
+    </style>
 </head>
 <body>
+    <div style="position: absolute; color: white" id="hud">
+        <div class="hud">
+            Score: <div type="number" id="score" name="score" value=0></div>
+        </div>
+        <div class="hud">
+            Health: <div type="number" id="health" name="health" value=0></div>
+        </div>
+    </div>
     <canvas style="height: 100vh; width: 100vw;" id="c"></canvas>
     <div id="loading">
       <div>

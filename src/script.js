@@ -7,12 +7,16 @@ import { PlaneGeometry } from 'three'
 
 let player;
 let stars=[]
+let comets=[]
 const fov = 45;
 const aspect = 2;  // the canvas default
 const near = 0.1;
 const far = 100;
 const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-
+let score=0
+let health=100
+document.getElementById("score").innerHTML=score
+document.getElementById("health").innerHTML=health
 class Stars {
     constructor(star){
         this.star=star 
@@ -20,11 +24,25 @@ class Stars {
     }
 };
 
+class Comets {
+    constructor(comet){
+        this.comet=comet 
+        this.status=true
+    }
+};
+
 document.addEventListener("keydown", (e) => {
-    if (e.code === "ArrowUp") {player.position.z -= 0.2}
-    else if (e.code === "ArrowDown"){ player.position.z += 0.2}
-    else if (e.code === "ArrowLeft"){ player.position.x -= 0.2}
-    else if (e.code === "ArrowRight"){ player.position.x += 0.2}
+    let z = player.position.z
+    let x = player.position.x
+    if (e.code === "ArrowUp") {z -= 0.2}
+    else if (e.code === "ArrowDown"){z += 0.2}
+    else if (e.code === "ArrowLeft"){ x -= 0.2}
+    else if (e.code === "ArrowRight"){ x += 0.2}
+    z = z >= 75 ? 75 : z;
+    z = z <= 34 ? 34 : z;
+    x = x >= 18 ? 18 : x;
+    x = x <= -20 ? -20 : x;
+    player.position.set(x, player.position.y, z)
     console.log(player.position.x, player.position.y, player.position.z)
 });
 
@@ -35,7 +53,7 @@ function randomNumber(min, max){
     return Math.floor(r)
 }
 
-function main() {
+async function main() {
   const canvas = document.querySelector('#c');
   const renderer = new THREE.WebGLRenderer({canvas});
 
@@ -66,11 +84,12 @@ function main() {
   const models = {
     plane:    { url: './plane.glb' },
     star:    { url: './star.glb' },
+    comet: { url : './comet.glb' }
   };
   {
     const gltfLoader = new GLTFLoader(manager);
     for (const model of Object.values(models)) {
-      gltfLoader.load(model.url, (gltf) => {
+      await gltfLoader.load(model.url, (gltf) => {
         model.gltf = gltf;
       });
     }
@@ -106,10 +125,10 @@ function main() {
     let z_min = player.position.z+2
     let z_max = player.position.z-2
     let x_max = player.position.x+4
-    let x_min = player.position.x-4
+    let x_min = player.position.x-4 
     if(position.z >= z_max )
         if(position.z <= z_min )
-            if(position.x < x_max || position.x > x_min)
+            if(position.x < x_max && position.x > x_min)
                 return true
     return false
     }
@@ -126,9 +145,9 @@ function main() {
             let x_position = randomNumber(player.position.x-6-3, player.position.x+6+4)
             obstacle.position.set(x_position, 30, 25)       
             let star = new Stars(obstacle.clone())
-            //star.star.rotation.x -= 100
+            star.star.rotation.x += 0.2
             //star.star.rotation.z -= 90
-            star.star.rotation.y -=90
+            star.star.rotation.y -= Math.PI/2
             star.star.scale.set(2, 2, 2)
             scene.add(star.star)
             stars.push(star)
@@ -137,20 +156,57 @@ function main() {
     }
   }
 
-  let moveStars = () => {
+  let moveStars = async () => {
       stars.forEach((star)=>{
-          if(star)
+        if(star){
               star.star.position.set(star.star.position.x, star.star.position.y, star.star.position.z+0.02);
               if(checkCollision(star.star.position)){
                 scene.remove(star.star)
-                stars.status=false
+                score+=10
+                document.getElementById("score").innerHTML=score
+                star.status=false
               }
+        }
       });
   }
 
+  let now_c = 0;
+  let addComet = () => {
+    if (then-now_c > 4){
+        now_c=then;
+        let flag = randomNumber(0, 3);
+        if(flag){
+            let obstacle = models.comet.gltf.scene;
+            let x_position = randomNumber(player.position.x-6-3, player.position.x+6+4)
+            obstacle.position.set(x_position, 30, 25)       
+            let comet = new Comets(obstacle.clone())
+            comet.comet.rotation.x += 0.2
+            //star.star.rotation.z -= 90
+            comet.comet.rotation.y -= Math.PI/2
+            comet.comet.scale.set(2, 2, 2)
+            scene.add(comet.comet)
+            comets.push(comet)
+        }
+    }
+}
+
+    let moveComets = async () => {
+        comets.forEach((comet)=>{
+          if(comet){
+                comet.comet.position.set(comet.comet.position.x, comet.comet.position.y, comet.comet.position.z+0.02);
+                if(checkCollision(comet.comet.position)){
+                  scene.remove(comet.comet)
+                  health-=10
+                  document.getElementById("health").innerHTML=health
+                  comet.status=false
+                }
+          }
+        });
+    }
   let removeElements = () => {
-      stars = stars.filter(star => star.status)
-  }
+    stars = stars.filter(star => star.status)
+    comets = comets.filter(comet => comet.status)
+    }
 
   let then = 0;
   function render(now) {
@@ -171,6 +227,8 @@ function main() {
     renderer.render(scene, camera);
     addStar();
     moveStars();
+    addComet();
+    moveComets();
     removeElements();
     requestAnimationFrame(render);
   }
