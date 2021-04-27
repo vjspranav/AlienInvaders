@@ -1,17 +1,12 @@
-# Three.js Starter
-Courtesy of Bruno Simon of https://threejs-journey.xyz/
+# Alien Invader
 
-## Setup
-Download [Node.js](https://nodejs.org/en/download/).
-Run this followed commands:
+To start playing
 
-``` bash
-# Install dependencies (only the first time)
-npm install
-
-# Run the local server at localhost:8080
-npm run dev
-
-# Build for production in the dist/ directory
-npm run build
 ```
+npm install
+npm run dev
+```
+
+# Trailer
+
+Link: https://iiitaphyd-my.sharepoint.com/:f:/g/personal/vjs_pranavasri_research_iiit_ac_in/EtlHJ0b11ZNHpF0QalSl5_IBH-4abwmlV3XiEvBmrhKkxw?e=XMTr47

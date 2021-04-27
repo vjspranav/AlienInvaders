@@ -6,6 +6,10 @@ import Swal from "sweetalert2";
 import * as dat from "dat.gui";
 import { PlaneGeometry } from "three";
 
+const sleep = (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
 let player;
 let stars = [];
 let comets = [];
@@ -399,7 +403,7 @@ async function main() {
         text: "Your total score is: " + score,
       });
   }
-
+  await sleep(1);
   await requestAnimationFrame(render);
 }
 main();
