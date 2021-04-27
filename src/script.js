@@ -1,105 +1,112 @@
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as dat from 'dat.gui'
+import { PlaneGeometry } from 'three'
 
-// Debug
-const gui = new dat.GUI()
+let player;
+document.addEventListener("keydown", (e) => {
+    if (e.code === "ArrowUp") player.position.z -= 0.2;
+    else if (e.code === "ArrowDown") player.position.z += 0.2;
+    else if (e.code === "ArrowLeft") player.position.x -= 0.2;
+    else if (e.code === "ArrowRight") player.position.x += 0.2;
+});
 
-// Canvas
-const canvas = document.querySelector('canvas.webgl')
+function main() {
+  const canvas = document.querySelector('#c');
+  const renderer = new THREE.WebGLRenderer({canvas});
 
-// Scene
-const scene = new THREE.Scene()
+  const fov = 45;
+  const aspect = 2;  // the canvas default
+  const near = 0.1;
+  const far = 100;
+  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+  camera.position.set(0, 75, 100);
 
-// Objects
-const geometry = new THREE.TorusGeometry( .7, .2, 16, 100 );
+  const controls = new OrbitControls(camera, canvas);
+  controls.target.set(0, 25, 50);
+  controls.update();
 
-// Materials
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('white');
 
-const material = new THREE.MeshBasicMaterial()
-material.color = new THREE.Color(0xff0000)
+  function addLight(...pos) {
+    const color = 0xFFFFFF;
+    const intensity = 1;
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(...pos);
+    scene.add(light);
+    scene.add(light.target);
+  }
+  addLight(5, 5, 2);
+  addLight(-5, 5, 5);
 
-// Mesh
-const sphere = new THREE.Mesh(geometry,material)
-scene.add(sphere)
+  const manager = new THREE.LoadingManager();
+  manager.onLoad = init;
 
-// Lights
+  const progressbarElem = document.querySelector('#progressbar');
+  manager.onProgress = (url, itemsLoaded, itemsTotal) => {
+    progressbarElem.style.width = `${itemsLoaded / itemsTotal * 100 | 0}%`;
+  };
 
-const pointLight = new THREE.PointLight(0xffffff, 0.1)
-pointLight.position.x = 2
-pointLight.position.y = 3
-pointLight.position.z = 4
-scene.add(pointLight)
+  const models = {
+    plane:    { url: './plane.glb' },
+    star:    { url: './star.glb' },
+  };
+  {
+    const gltfLoader = new GLTFLoader(manager);
+    for (const model of Object.values(models)) {
+      gltfLoader.load(model.url, (gltf) => {
+        model.gltf = gltf;
+      });
+    }
+  }
 
-/**
- * Sizes
- */
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
+  const mixers = [];
+
+  function init() {
+    // hide the loading bar
+    const loadingElem = document.querySelector('#loading');
+    loadingElem.style.display = 'none';
+    player=models.plane.gltf.scene
+    player.position.set(0, 25, 50);
+    scene.add(player)
+  }
+
+  function resizeRendererToDisplaySize(renderer) {
+    const canvas = renderer.domElement;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    const needResize = canvas.width !== width || canvas.height !== height;
+    if (needResize) {
+      renderer.setSize(width, height, false);
+    }
+    return needResize;
+  }
+
+  let then = 0;
+  function render(now) {
+    now *= 0.001;  // convert to seconds
+    const deltaTime = now - then;
+    then = now;
+
+    if (resizeRendererToDisplaySize(renderer)) {
+      const canvas = renderer.domElement;
+      camera.aspect = canvas.clientWidth / canvas.clientHeight;
+      camera.updateProjectionMatrix();
+    }
+
+    for (const mixer of mixers) {
+      mixer.update(deltaTime);
+    }   
+
+    renderer.render(scene, camera);
+
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
 }
 
-window.addEventListener('resize', () =>
-{
-    // Update sizes
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-})
-
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.x = 0
-camera.position.y = 0
-camera.position.z = 2
-scene.add(camera)
-
-// Controls
-// const controls = new OrbitControls(camera, canvas)
-// controls.enableDamping = true
-
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
-})
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
-/**
- * Animate
- */
-
-const clock = new THREE.Clock()
-
-const tick = () =>
-{
-
-    const elapsedTime = clock.getElapsedTime()
-
-    // Update objects
-    sphere.rotation.y = .5 * elapsedTime
-
-    // Update Orbital Controls
-    // controls.update()
-
-    // Render
-    renderer.render(scene, camera)
-
-    // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
-}
-
-tick()
+main();
