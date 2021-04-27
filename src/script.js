@@ -10,6 +10,8 @@ let player;
 let stars = [];
 let comets = [];
 let missiles = [];
+let enemies = [];
+let enemies_positions = [];
 const fov = 45;
 const aspect = 2; // the canvas default
 const near = 0.1;
@@ -36,6 +38,13 @@ class Comets {
 class Missiles {
   constructor(missile) {
     this.missile = missile;
+    this.status = true;
+  }
+}
+
+class Enemies {
+  constructor(enemy) {
+    this.enemy = enemy;
     this.status = true;
   }
 }
@@ -100,6 +109,7 @@ async function main() {
     star: { url: "./star.glb" },
     comet: { url: "./comet.glb" },
     missile: { url: "./missile.glb" },
+    enemy: { url: "./enemy.glb" },
   };
   {
     const gltfLoader = new GLTFLoader(manager);
@@ -147,6 +157,21 @@ async function main() {
     return false;
   };
 
+  let checkEnemyCollision = (position) => {
+    for (let i = 0; i < enemies.length; i += 1) {
+      let enemy = enemies[i];
+      let z = enemy.enemy.position.z;
+      let x = enemy.enemy.position.x;
+      if (Math.abs(position.z - z) <= 3 && Math.abs(position.x - x) <= 3) {
+        console.log("Here");
+        enemy.status = false;
+        scene.remove(enemy.enemy);
+        return true;
+      }
+    }
+    return false;
+  };
+
   let addMissile = () => {
     let obstacle = models.missile.gltf.scene;
     let position = player.position.clone();
@@ -167,6 +192,15 @@ async function main() {
           missile.missile.position.y,
           missile.missile.position.z - 0.02
         );
+        let cstatus = checkEnemyCollision(missile.missile.position);
+        console.log(cstatus);
+        if (cstatus) {
+          console.log("Here");
+          scene.remove(missile.missile);
+          score += 50;
+          document.getElementById("score").innerHTML = score;
+          missile.status = false;
+        }
         if (missile.missile.position.z <= 34) {
           missile.status = false;
           scene.remove(missile.missile);
@@ -284,10 +318,53 @@ async function main() {
     });
   };
 
+  let addEnemies = () => {
+    if (then - now_c > 3) {
+      now_c = then;
+      let flag = randomNumber(0, 4);
+      if (flag) {
+        let obstacle = models.enemy.gltf.scene;
+        let x_position = randomNumber(
+          player.position.x - 6 - 3,
+          player.position.x + 6 + 4
+        );
+        x_position = x_position >= 18 ? 18 : x_position;
+        x_position = x_position <= -20 ? -20 : x_position;
+        obstacle.position.set(x_position, 30, 25);
+        let enemy = new Enemies(obstacle.clone());
+        scene.add(enemy.enemy);
+        enemies.push(enemy);
+      }
+    }
+  };
+
+  let moveEnemies = async () => {
+    enemies.forEach((enemy) => {
+      if (enemy) {
+        enemy.enemy.position.set(
+          enemy.enemy.position.x,
+          enemy.enemy.position.y,
+          enemy.enemy.position.z + 0.02
+        );
+        if (checkCollision(enemy.enemy.position)) {
+          scene.remove(enemy.enemy);
+          health -= 20;
+          document.getElementById("health").innerHTML = health;
+          enemy.status = false;
+        }
+        if (enemy.enemy.position.z >= 75) {
+          enemy.status = false;
+          scene.remove(enemy.enemy);
+        }
+      }
+    });
+  };
+
   let removeElements = () => {
     stars = stars.filter((star) => star.status);
     comets = comets.filter((comet) => comet.status);
     missiles = missiles.filter((missile) => missile.status);
+    enemies = enemies.filter((enemy) => enemy.status);
   };
 
   let then = 0;
@@ -312,6 +389,8 @@ async function main() {
     addComet();
     moveComets();
     moveMissiles();
+    addEnemies();
+    moveEnemies();
     removeElements();
     if (health > 0) requestAnimationFrame(render);
     else
