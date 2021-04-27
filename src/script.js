@@ -2,12 +2,14 @@ import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import Swal from "sweetalert2";
 import * as dat from "dat.gui";
 import { PlaneGeometry } from "three";
 
 let player;
 let stars = [];
 let comets = [];
+let missiles = [];
 const fov = 45;
 const aspect = 2; // the canvas default
 const near = 0.1;
@@ -27,6 +29,13 @@ class Stars {
 class Comets {
   constructor(comet) {
     this.comet = comet;
+    this.status = true;
+  }
+}
+
+class Missiles {
+  constructor(missile) {
+    this.missile = missile;
     this.status = true;
   }
 }
@@ -90,6 +99,7 @@ async function main() {
     plane: { url: "./plane.glb" },
     star: { url: "./star.glb" },
     comet: { url: "./comet.glb" },
+    missile: { url: "./missile.glb" },
   };
   {
     const gltfLoader = new GLTFLoader(manager);
@@ -137,6 +147,41 @@ async function main() {
     return false;
   };
 
+  let addMissile = () => {
+    let obstacle = models.missile.gltf.scene;
+    let position = player.position.clone();
+    obstacle.position.set(position.x + 1, 28, (position.z -= 10));
+    let missile = new Missiles(obstacle.clone());
+    //comet.comet.rotation.x += 0.2;
+    missile.missile.rotation.y += Math.PI / 2;
+    missile.missile.scale.set(2, 2, 2);
+    scene.add(missile.missile);
+    missiles.push(missile);
+  };
+
+  let moveMissiles = async () => {
+    missiles.forEach((missile) => {
+      if (missile) {
+        missile.missile.position.set(
+          missile.missile.position.x,
+          missile.missile.position.y,
+          missile.missile.position.z - 0.02
+        );
+        if (missile.missile.position.z <= 34) {
+          missile.status = false;
+          scene.remove(missile.missile);
+        }
+      }
+    });
+  };
+
+  document.addEventListener("keyup", (e) => {
+    if (e.keyCode == 32) {
+      console.log("Missile launched");
+      addMissile();
+    }
+  });
+
   let now = 0;
   let addStar = () => {
     if (then - now > 2) {
@@ -150,6 +195,8 @@ async function main() {
           player.position.x - 6 - 3,
           player.position.x + 6 + 4
         );
+        x_position = x_position >= 18 ? 18 : x_position;
+        x_position = x_position <= -20 ? -20 : x_position;
         obstacle.position.set(x_position, 30, 25);
         let star = new Stars(obstacle.clone());
         star.star.rotation.x += 0.2;
@@ -182,7 +229,10 @@ async function main() {
           document.getElementById("score").innerHTML = score;
           star.status = false;
         }
-        if (star.star.position.z >= 75) star.status = false;
+        if (star.star.position.z >= 75) {
+          star.status = false;
+          scene.remove(star.star);
+        }
       }
     });
   };
@@ -198,6 +248,8 @@ async function main() {
           player.position.x - 6 - 3,
           player.position.x + 6 + 4
         );
+        x_position = x_position >= 18 ? 18 : x_position;
+        x_position = x_position <= -20 ? -20 : x_position;
         obstacle.position.set(x_position, 30, 25);
         let comet = new Comets(obstacle.clone());
         comet.comet.rotation.x += 0.2;
@@ -224,13 +276,18 @@ async function main() {
           document.getElementById("health").innerHTML = health;
           comet.status = false;
         }
-        if (comet.comet.position.z >= 75) comet.status = false;
+        if (comet.comet.position.z >= 75) {
+          comet.status = false;
+          scene.remove(comet.comet);
+        }
       }
     });
   };
+
   let removeElements = () => {
     stars = stars.filter((star) => star.status);
     comets = comets.filter((comet) => comet.status);
+    missiles = missiles.filter((missile) => missile.status);
   };
 
   let then = 0;
@@ -254,10 +311,16 @@ async function main() {
     moveStars();
     addComet();
     moveComets();
+    moveMissiles();
     removeElements();
-    requestAnimationFrame(render);
+    if (health > 0) requestAnimationFrame(render);
+    else
+      Swal.fire({
+        title: "GAME OVER",
+        text: "Your total score is: " + score,
+      });
   }
 
-  requestAnimationFrame(render);
+  await requestAnimationFrame(render);
 }
 main();
