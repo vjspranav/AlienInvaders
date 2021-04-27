@@ -322,9 +322,10 @@ async function main() {
     });
   };
 
+  let now_e = 0
   let addEnemies = () => {
-    if (then - now_c > 3) {
-      now_c = then;
+    if (then - now_e > 4) {
+      now_e = then;
       let flag = randomNumber(0, 4);
       if (flag) {
         let obstacle = models.enemy.gltf.scene;
