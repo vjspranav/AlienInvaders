@@ -182,6 +182,7 @@ async function main() {
           document.getElementById("score").innerHTML = score;
           star.status = false;
         }
+        if (star.star.position.z >= 75) star.status = false;
       }
     });
   };
@@ -223,6 +224,7 @@ async function main() {
           document.getElementById("health").innerHTML = health;
           comet.status = false;
         }
+        if (comet.comet.position.z >= 75) comet.status = false;
       }
     });
   };
