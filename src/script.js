@@ -6,30 +6,27 @@ import * as dat from 'dat.gui'
 import { PlaneGeometry } from 'three'
 
 let player;
+const fov = 45;
+const aspect = 2;  // the canvas default
+const near = 0.1;
+const far = 100;
+const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+
 document.addEventListener("keydown", (e) => {
-    if (e.code === "ArrowUp") player.position.z -= 0.2;
-    else if (e.code === "ArrowDown") player.position.z += 0.2;
-    else if (e.code === "ArrowLeft") player.position.x -= 0.2;
-    else if (e.code === "ArrowRight") player.position.x += 0.2;
+    if (e.code === "ArrowUp") {player.position.z -= 0.2}
+    else if (e.code === "ArrowDown"){ player.position.z += 0.2}
+    else if (e.code === "ArrowLeft"){ player.position.x -= 0.2}
+    else if (e.code === "ArrowRight"){ player.position.x += 0.2}
 });
 
 function main() {
   const canvas = document.querySelector('#c');
   const renderer = new THREE.WebGLRenderer({canvas});
 
-  const fov = 45;
-  const aspect = 2;  // the canvas default
-  const near = 0.1;
-  const far = 100;
-  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
   camera.position.set(0, 75, 100);
 
-  const controls = new OrbitControls(camera, canvas);
-  controls.target.set(0, 25, 50);
-  controls.update();
-
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('white');
+  scene.background = new THREE.Color('black');
 
   function addLight(...pos) {
     const color = 0xFFFFFF;
@@ -71,8 +68,13 @@ function main() {
     loadingElem.style.display = 'none';
     player=models.plane.gltf.scene
     player.position.set(0, 25, 50);
+    player.scale.set(2, 2, 2)
+    controls.target = player.position;
+    controls.update();
     scene.add(player)
   }
+
+  const controls = new OrbitControls(camera, canvas);
 
   function resizeRendererToDisplaySize(renderer) {
     const canvas = renderer.domElement;
